@@ -4,11 +4,11 @@ import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
-export class CodeStack extends Stack {
+export class MainStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const queue = new sqs.Queue(this, 'CodeQueue', {
+    const queue = new sqs.Queue(this, 'MainQueue', {
       visibilityTimeout: Duration.seconds(300)
     });
 
