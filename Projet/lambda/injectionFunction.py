@@ -18,12 +18,15 @@ columns = [
 def handler(event, context):
 
     array = createArrayfromjson(event)
-    dictionary = {
-        "trail": array,
-        "encodeur": hash_arrayString(array),
-    }
+    dictionary = {}
+
+    for i in range(len(columns)):
+        dictionary[columns[i]] = array[i]
+
+    dictionary["encodeur"] = hash_arrayString(array)
     solutionJson = json.dumps(dictionary)
-    return solutionJson, hash_arrayString(array)
+
+    return solutionJson
 
 
 def loadJson(jsonlog):
