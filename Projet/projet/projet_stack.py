@@ -1,4 +1,4 @@
-#import this
+# import this
 from constructs import Construct
 import aws_cdk as cdk
 from aws_cdk import (
@@ -9,7 +9,10 @@ from aws_cdk import (
     aws_sns as sns,
     aws_sns_subscriptions as subs,
     aws_lambda as _lambda,
+    aws_lambda_event_sources as eventsource,
 )
+from projet.firehose import firehose
+from projet.roles import firehoseDeliveryRole
 
 
 class ProjetStack(Stack):
@@ -29,10 +32,18 @@ class ProjetStack(Stack):
 
         my_lambda = _lambda.Function(
             self,
-            "HelloHandler",
+            "InjectionFunctionHandler",
             runtime=_lambda.Runtime.PYTHON_3_7,
             code=_lambda.Code.from_asset("lambda"),
             handler="injectionFunction.handler",
+        )
+        # Link role to lambda function:
+        my_lambda.grantReadWrite(firehoseDeliveryRole)
+
+        # Trigger lambda from Kinesis:
+        eventSource = eventsource.KinesisEventSource(
+            firehose,
+            # Parameters ?
         )
 
         queue = sqs.Queue(

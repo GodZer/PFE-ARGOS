@@ -1,8 +1,7 @@
 import aws_cdk as cdk
 from aws_cdk import (
-    aws_iam as iam,
     aws_glue as glue,
-    aws_kinesisfirehose as firehose,
+    aws_kinesisfirehose as kinesisfirehose,
 )
 from projet.projet_stack import (
     currentStack,
@@ -14,57 +13,57 @@ from projet.roles import (
 )
 
 
-class Role():
+class Firehose():
     def __init__(self):
+
         # Kinesis Firehose :
-        firehose.CfnDeliveryStream(
+        firehose = kinesisfirehose.CfnDeliveryStream(
             self,
             "trailDeliveryStream",
-            extended_s3_destination_configuration=firehose.CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty(
+            extended_s3_destination_configuration=kinesisfirehose.CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty(
                 bucket_arn=deliveryBucket.bucketArn,
                 role_arn=firehoseDeliveryRole.roleArn,
                 prefix="username=!{partitionKeyFromQuery:user}/",
                 error_output_prefix="ingestionError/",
-                buffering_hints=firehose.CfnDeliveryStream.InputFormatConfigurationProperty(
+                buffering_hints=kinesisfirehose.CfnDeliveryStream.InputFormatConfigurationProperty(
                     interval_in_seconds=cdk.Duration.minutes(
                         5).to_seconds(),  # 300
                     size_in_mBs=cdk.Size(
                         cdk.mebibytes(128).toMebibytes()),  # 128
                 )
             ),
-            data_format_conversion_configuration=firehose.CfnDeliveryStream.DataFormatConversionConfigurationProperty(
+            data_format_conversion_configuration=kinesisfirehose.CfnDeliveryStream.DataFormatConversionConfigurationProperty(
                 enabled=True,
-                input_format_configuration=firehose.CfnDeliveryStream.InputFormatConfigurationProperty(
-                    deserializer=firehose.CfnDeliveryStream.DeserializerProperty(
-                        # je sais pas si c'est la bonne manière d'écrire
-                        hive_json_ser_de=firehose.CfnDeliveryStream.HiveJsonSerDeProperty(),
+                input_format_configuration=kinesisfirehose.CfnDeliveryStream.InputFormatConfigurationProperty(
+                    deserializer=kinesisfirehose.CfnDeliveryStream.DeserializerProperty(
+                        hive_json_ser_de=kinesisfirehose.CfnDeliveryStream.HiveJsonSerDeProperty(),
                     )
                 ),
             ),
-            output_format_configuration=firehose.CfnDeliveryStream.OutputFormatConfigurationProperty(
-                serializer=firehose.CfnDeliveryStream.SerializerProperty(
-                    parquet_ser_de=firehose.CfnDeliveryStream.ParquetSerDeProperty(
+            output_format_configuration=kinesisfirehose.CfnDeliveryStream.OutputFormatConfigurationProperty(
+                serializer=kinesisfirehose.CfnDeliveryStream.SerializerProperty(
+                    parquet_ser_de=kinesisfirehose.CfnDeliveryStream.ParquetSerDeProperty(
                         compression="UNCOMPRESSED",
                         writer_version="V2"
                     )
                 )
             ),
-            schema_configuration=firehose.CfnDeliveryStream.SchemaConfigurationProperty(
+            schema_configuration=kinesisfirehose.CfnDeliveryStream.SchemaConfigurationProperty(
                 database_name=glue.database.databaseName,  # changer database
                 catalog_id=glue.database.catalogId,  # changer database
                 region=currentStack.region,
                 role_arn=firehoseSchemaConfigurationRole.roleArn,
                 table_name=glue.table.tableName,
             ),
-            processing_configuration=firehose.CfnDeliveryStream.ProcessingConfigurationProperty(
+            processing_configuration=kinesisfirehose.CfnDeliveryStream.ProcessingConfigurationProperty(
                 enabled=True,
-                processors=[firehose.CfnDeliveryStream.ProcessorProperty(
+                processors=[kinesisfirehose.CfnDeliveryStream.ProcessorProperty(
                     type="MetadataExtraction",
-                    parameters=[{firehose.CfnDeliveryStream.ProcessorParameterProperty(
+                    parameters=[{kinesisfirehose.CfnDeliveryStream.ProcessorParameterProperty(
                         parameter_name='MetadataExtractionQuery',
                         parameter_value='{user: .user}',
                     )},
-                        {firehose.CfnDeliveryStream.ProcessorParameterProperty(
+                        {kinesisfirehose.CfnDeliveryStream.ProcessorParameterProperty(
                             parameter_name='JsonParsingEngine',
                             parameter_value='JQ-1.6',
                         )}
@@ -72,7 +71,7 @@ class Role():
 
                 )]
             ),
-            dynamic_partitioning_configuration=firehose.CfnDeliveryStream.DynamicPartitioningConfigurationProperty(
+            dynamic_partitioning_configuration=kinesisfirehose.CfnDeliveryStream.DynamicPartitioningConfigurationProperty(
                 enabled=True,
             )
         )

@@ -3,6 +3,6 @@ import aws_cdk as cdk
 from projet.projet_stack import ProjetStack
 
 app = cdk.App()
-ProjetStack(app, "projetClaire")
+ProjetStack(app, "projet")
 
 app.synth()

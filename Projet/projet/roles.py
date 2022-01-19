@@ -9,14 +9,16 @@ from projet.projet_stack import deliveryBucket
 class Roles():
     def __init__(self):
 
-        # Définir roles
+        # Roles definition
         firehoseDeliveryRole = iam.Role(
             self,
             role_name="deliveryRole",
             assumed_by=iam.ServicePrincipal("firehose.amazonaws.com")
         )
+        # Link Bucket to Kinesis
         deliveryBucket.grantReadWrite(firehoseDeliveryRole),
 
+        # Role linked to glue for Data management
         firehoseSchemaConfigurationRole = iam.Role(
             self,
             role_name="schemaConfigurationRole",
