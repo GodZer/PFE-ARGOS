@@ -3,7 +3,7 @@ from aws_cdk import (
     aws_iam as iam,
     aws_glue as glue,
 )
-from projet.projet_stack import deliveryBucket
+import projet.projet_stack
 
 
 class Roles():
@@ -16,7 +16,8 @@ class Roles():
             assumed_by=iam.ServicePrincipal("firehose.amazonaws.com")
         )
         # Link Bucket to Kinesis
-        deliveryBucket.grantReadWrite(firehoseDeliveryRole),
+        projet.projet_stack.ProjetStack.deliveryBucket.grantReadWrite(
+            firehoseDeliveryRole),
 
         # Role linked to glue for Data management
         firehoseSchemaConfigurationRole = iam.Role(

@@ -9,10 +9,10 @@ from aws_cdk import (
     aws_sns as sns,
     aws_sns_subscriptions as subs,
     aws_lambda as _lambda,
-    aws_lambda_event_sources as eventsource,
+    aws_lambda_event_sources as KinesisEventSource,
 )
-from projet.firehose import firehose
-from projet.roles import firehoseDeliveryRole
+
+import projet.firehose
 
 
 class ProjetStack(Stack):
@@ -23,11 +23,10 @@ class ProjetStack(Stack):
         # other parameters by default
         deliveryBucket = _s3.Bucket(
             self,
-            bucket_name="ProjectBucket",
+            "ProjectBucket",
             removal_policy=cdk.RemovalPolicy.DESTROY,
             auto_delete_objects=True,
         )
-
         currentStack = Stack.of(self)
 
         my_lambda = _lambda.Function(
@@ -37,14 +36,12 @@ class ProjetStack(Stack):
             code=_lambda.Code.from_asset("lambda"),
             handler="injectionFunction.handler",
         )
-        # Link role to lambda function:
-        my_lambda.grantReadWrite(firehoseDeliveryRole)
 
         # Trigger lambda from Kinesis:
-        eventSource = eventsource.KinesisEventSource(
-            firehose,
+        my_lambda.add_event_source(KinesisEventSource(
+            projet.firehose.Firehose.firehose,
             # Parameters ?
-        )
+        ))
 
         queue = sqs.Queue(
             self,

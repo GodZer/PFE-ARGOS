@@ -3,14 +3,8 @@ from aws_cdk import (
     aws_glue as glue,
     aws_kinesisfirehose as kinesisfirehose,
 )
-from projet.projet_stack import (
-    currentStack,
-    deliveryBucket
-)
-from projet.roles import (
-    firehoseDeliveryRole,
-    firehoseSchemaConfigurationRole
-)
+import projet.roles
+import projet.projet_stack
 
 
 class Firehose():
@@ -21,8 +15,8 @@ class Firehose():
             self,
             "trailDeliveryStream",
             extended_s3_destination_configuration=kinesisfirehose.CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty(
-                bucket_arn=deliveryBucket.bucketArn,
-                role_arn=firehoseDeliveryRole.roleArn,
+                bucket_arn=projet.projet_stack.ProjetStack.deliveryBucket.bucketArn,
+                role_arn=projet.roles.Roles.firehoseDeliveryRole.roleArn,
                 prefix="username=!{partitionKeyFromQuery:user}/",
                 error_output_prefix="ingestionError/",
                 buffering_hints=kinesisfirehose.CfnDeliveryStream.InputFormatConfigurationProperty(
@@ -51,8 +45,8 @@ class Firehose():
             schema_configuration=kinesisfirehose.CfnDeliveryStream.SchemaConfigurationProperty(
                 database_name=glue.database.databaseName,  # changer database
                 catalog_id=glue.database.catalogId,  # changer database
-                region=currentStack.region,
-                role_arn=firehoseSchemaConfigurationRole.roleArn,
+                region=projet.projet_stack.ProjetStack.currentStack.region,
+                role_arn=projet.roles.Roles.firehoseSchemaConfigurationRole.roleArn,
                 table_name=glue.table.tableName,
             ),
             processing_configuration=kinesisfirehose.CfnDeliveryStream.ProcessingConfigurationProperty(
