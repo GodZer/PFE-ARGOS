@@ -50,9 +50,11 @@ def createArrayfromjson(jsondict):
     logkey, logvalue = loadJson(jsondict)
 
     if "groups" in logkey:
-        logvalue[logkey.index("groups")] = "".join(logvalue[logkey.index("groups")])
+        logvalue[logkey.index("groups")] = "".join(
+            logvalue[logkey.index("groups")])
     if "sourceIPs" in logkey:
-        logvalue[logkey.index("sourceIPs")] = logvalue[logkey.index("sourceIPs")][0]
+        logvalue[logkey.index("sourceIPs")
+                 ] = logvalue[logkey.index("sourceIPs")][0]
 
     final_array = []
 
