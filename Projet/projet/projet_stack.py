@@ -34,12 +34,19 @@ class ProjetStack(Stack):
         # Roles definition
         firehoseDeliveryRole = iam.Role(
             self,
-            "deliveryRole",
+            "fDeliveryRole",
+            assumed_by=iam.ServicePrincipal("firehose.amazonaws.com")
+        )
+        kinesisDeliveryRole = iam.Role(
+            self,
+            "kDeliveryRole",
             assumed_by=iam.ServicePrincipal("firehose.amazonaws.com")
         )
         # Role assign between Firehose and Bucket
         deliveryBucket.grant_read_write(
             firehoseDeliveryRole),
+        deliveryBucket.grant_write(
+            kinesisDeliveryRole),
 
         # Role linked to glue for Data management
         """
@@ -79,6 +86,8 @@ class ProjetStack(Stack):
         # Upgrade permissions to use Stream:
         kinesis_stream.grant_write(
             my_lambda)
+        kinesis_stream.grant_read(kinesisDeliveryRole)
+        kinesis_stream.grant(kinesisDeliveryRole, 'kinesis:DescribrStream')
 
         # Create Kinesis Event Source:
         kinesis_event_source = EventSource.KinesisEventSource(
@@ -88,6 +97,21 @@ class ProjetStack(Stack):
 
         # Trigger lambda from Kinesis:
         my_lambda.add_event_source(kinesis_event_source)
+
+        firehose = kinesisfirehose.CfnDeliveryStream(
+            self,
+            "trailDeliveryStream",
+            delivery_stream_name="DeliveryStream",
+            delivery_stream_type="KinesisStreamAsSource",
+            kinesis_stream_source_configuration=kinesisfirehose.CfnDeliveryStream.KinesisStreamSourceConfigurationProperty(
+                kinesis_stream_arn=kinesis_stream.stream_arn,
+                role_arn=kinesisDeliveryRole.role_arn,
+            ),
+            extended_s3_destination_configuration=kinesisfirehose.CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty(
+                bucket_arn=deliveryBucket.bucket_arn,
+                role_arn=firehoseDeliveryRole.role_arn,
+            ),
+        )
 
         """
         # Links Kinesis to S3 Bucket
