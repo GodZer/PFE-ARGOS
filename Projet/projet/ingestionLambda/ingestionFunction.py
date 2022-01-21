@@ -1,5 +1,9 @@
 import json
 import hashlib
+import boto3
+import os
+
+firehose = boto3.client('firehose')
 
 columns = [
     "verb",
@@ -29,8 +33,14 @@ def handler(event, context):
 
     dictionary["encodeur"] = hash_arrayString(array)
     solutionJson = json.dumps(dictionary)
-    print(solutionJson)
-    # return solutionJson
+    
+    firehose.put_record(
+        DeliveryStreamName=os.environ["FIREHOSE_DELIVERY_STREAM_NAME"],
+        Record={
+            'Data': solutionJson
+        }
+    )
+
     return {
         "statusCode": 200,
         "body": "Ok"

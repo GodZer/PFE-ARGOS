@@ -226,7 +226,23 @@ class ARGOS_STACK(Stack):
             entry=os.path.dirname(os.path.abspath(__file__)) + '/ingestionLambda',
             runtime=Runtime.PYTHON_3_9,
             handler="handler",
-            index="ingestionFunction.py")
+            index="ingestionFunction.py",
+            environment={
+                "FIREHOSE_DELIVERY_STREAM_NAME": delivery_stream.ref
+            })
+
+        ingestionLambda.role.attach_inline_policy(iam.PolicyDocument(
+            statements=[
+                iam.PolicyStatement(
+                    actions=[
+                        "firehose:PutRecord",
+                    ],
+                    resources=[
+                        delivery_stream.attr_arn
+                    ]  # variable database et table
+                )
+            ]
+        ))
 
         ingestion_api = apigwv2.HttpApi(self, "IngestionApi", create_default_stage=True)
 
