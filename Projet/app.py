@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 import aws_cdk as cdk
-
-from projet.projet_stack import ProjetStack
-
+from projet.ARGOS_STACK import ARGOS_STACK
 
 app = cdk.App()
-ProjetStack(app, "projetClaire")
+ARGOS_STACK(app, "ARGOS")
 
 app.synth()
