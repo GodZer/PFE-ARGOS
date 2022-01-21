@@ -9,16 +9,29 @@ from aws_cdk.aws_apigateway import *
 import aws_cdk.aws_apigateway as apigateway
 import aws_cdk.aws_logs as logs
 import aws_cdk.aws_logs_destinations as destinations
+import aws_cdk.aws_lambda_python_alpha as _lambda
 
 class CloudWatchLogsForwarder(Construct):
 
-    def __init__(self, scope: Construct, construct_id: str, log_group: logs.ILogGroup,**kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, *kwargs, log_group: logs.ILogGroup, api_url: str) -> None:
         super().__init__(scope, construct_id)
 
-        handler = Function(self, "LambdaAPIGateway",
+        handler = _lambda.PythonFunction(self, "CloudWatchLoagForwarder", 
             runtime=Runtime.PYTHON_3_9,
-            handler="messageExtraction.lambda_handler",
-            code=Code.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/cloudwatchLogsForwarder'))
+            handler="lambda_handler",
+            entry=os.path.dirname(os.path.abspath(__file__)) + '/cloudwatchLogsForwarder',
+            index="messageExtraction.py",
+            environment={
+                "API_URL": api_url
+            })
+
+        # handler = Function(self, "LambdaAPIGateway",
+        #     runtime=Runtime.PYTHON_3_9,
+        #     handler="messageExtraction.lambda_handler",
+        #     code=Code.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/cloudwatchLogsForwarder'),
+        #     environment={
+        #         "API_URL": api_url
+        #     })
 
         logs.SubscriptionFilter(self, "subscriptionFilter", 
             log_group=log_group, 

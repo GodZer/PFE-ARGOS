@@ -17,4 +17,6 @@ class ARGOS_STACK(Stack):
 
         log_group = logs.LogGroup.from_log_group_arn(self, "eksLogGroup", cloudwatch_log_group_arn)
 
-        lambda_con = CloudWatchLogsForwarder(self, "CloudWatchLogsForwarder", log_group)
+        lambda_con = CloudWatchLogsForwarder(self, "CloudWatchLogsForwarder", log_group=log_group, api_url="https://vkcdwvizij.execute-api.eu-west-3.amazonaws.com/test")
+
+        
