@@ -67,7 +67,7 @@ class ARGOS_STACK(Stack):
                 glue.Column(name="name", type=glue.Schema.STRING),
                 glue.Column(name="namespace", type=glue.Schema.STRING),
                 glue.Column(name="impersonatedUser", type=glue.Schema.STRING),
-                glue.Column(name="encodeur", type=glue.Schema.array(input_string="int", is_primitive=True))
+                glue.Column(name="encodeur", type=glue.Schema.array(input_string="bigint", is_primitive=True))
             ],
             partition_keys=[
                 glue.Column(name="username", type=glue.Schema.STRING)
@@ -231,7 +231,7 @@ class ARGOS_STACK(Stack):
                 "FIREHOSE_DELIVERY_STREAM_NAME": delivery_stream.ref
             })
 
-        ingestionLambda.role.attach_inline_policy(iam.PolicyDocument(
+        ingestionLambda.role.attach_inline_policy(iam.Policy(self, "ingestionLambdaKinesisPolicy", document=iam.PolicyDocument(
             statements=[
                 iam.PolicyStatement(
                     actions=[
@@ -242,7 +242,7 @@ class ARGOS_STACK(Stack):
                     ]  # variable database et table
                 )
             ]
-        ))
+        )))
 
         ingestion_api = apigwv2.HttpApi(self, "IngestionApi", create_default_stage=True)
 
