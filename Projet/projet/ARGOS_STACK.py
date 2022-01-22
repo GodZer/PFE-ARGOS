@@ -24,7 +24,11 @@ class ARGOS_STACK(Stack):
 
         log_group = logs.LogGroup.from_log_group_arn(self, "eksLogGroup", cloudwatch_log_group_arn)
 
-        deliveryBucket = s3.Bucket(self, "deliveryBucket", auto_delete_objects=True, removal_policy=RemovalPolicy.DESTROY)
+        deliveryBucket = s3.Bucket(self, "deliveryBucket", auto_delete_objects=True, removal_policy=RemovalPolicy.DESTROY,
+            lifecycle_rules=[
+                s3.LifecycleRule(expiration=Duration.days(21))
+            ]
+        )
 
         glue_database = glue_alpha.Database(self, "argos", database_name="argos")
         table = glue_alpha.Table(self, "k8s_audit",
