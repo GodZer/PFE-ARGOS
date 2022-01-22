@@ -18,32 +18,6 @@ from aws_cdk.aws_apigatewayv2_integrations_alpha import HttpLambdaIntegration
 import aws_cdk.aws_kinesisfirehose as firehose
 import aws_cdk.aws_iam as iam
 
-# {
-#     "verb": "update",
-#     "username": "system:node:ip-192-168-41-161.eu-west-3.compute.internal",
-#     "groups": "system:bootstrapperssystem:nodessystem:authenticated",
-#     "userAgent": "kubelet/v1.21.5 (linux/amd64) kubernetes/5236faf",
-#     "sourceIPs": "35.180.42.240",
-#     "resource": "leases",
-#     "subresource": "missing",
-#     "name": "ip-192-168-41-161.eu-west-3.compute.internal",
-#     "namespace": "kube-node-lease",
-#     "impersonatedUser": "missing",
-#     "encodeur": [
-#         2978658156,
-#         686429087,
-#         3774047808,
-#         1459907101,
-#         694158677,
-#         4015996320,
-#         684978570,
-#         2468911209,
-#         3729313784,
-#         684978570
-#     ]
-# }
-
-
 class ARGOS_STACK(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, cloudwatch_log_group_arn: str, **kwargs) -> None:
@@ -109,61 +83,6 @@ class ARGOS_STACK(Stack):
                 )
             }
         )
-
-#         firehose = firehose.CfnDeliveryStream(self, "trailDeliveryStream", {
-#   extendedS3DestinationConfiguration: {
-#     bucketArn: props.deliveryBucket.bucketArn,
-#     roleArn: firehoseDeliveryRole.roleArn,
-#     prefix: "username=!{partitionKeyFromQuery:user}/",
-#     errorOutputPrefix: "ingestionError/",
-#     bufferingHints: {
-#       intervalInSeconds: Duration.minutes(5).toSeconds(),
-#       sizeInMBs: Size.mebibytes(128).toMebibytes()
-#     },
-#     dataFormatConversionConfiguration: {
-#       enabled: true,
-#       inputFormatConfiguration: {
-#         deserializer: {
-#           hiveJsonSerDe: {}
-#         }
-#       },
-#       outputFormatConfiguration: {
-#         serializer: {
-#           parquetSerDe: {
-#             compression: "UNCOMPRESSED",
-#             writerVersion: "V2"
-#           }
-#         }
-#       },
-#       schemaConfiguration: {
-#         databaseName: props.glue.database.databaseName,
-#         catalogId: props.glue.database.catalogId,
-#         region: currentStack.region,
-#         roleArn: firehoseSchemaConfigurationRole.roleArn,
-#         tableName: props.glue.table.tableName
-#       }
-#     },
-#     processingConfiguration: {
-#       enabled: true,
-#       processors: [{
-#         type: "MetadataExtraction",
-#         parameters: [
-#           {
-#             parameterName: 'MetadataExtractionQuery',
-#             parameterValue: '{user: .user}',
-#           },
-#           {
-#             parameterName: 'JsonParsingEngine',
-#             parameterValue: 'JQ-1.6',
-#           },
-#         ],
-#       }]
-#     },
-#     dynamicPartitioningConfiguration: {
-#       enabled: true,
-#     }
-#   }
-# });
 
         delivery_stream = firehose.CfnDeliveryStream(self, "deliveryStream",
             extended_s3_destination_configuration=firehose.CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty(
