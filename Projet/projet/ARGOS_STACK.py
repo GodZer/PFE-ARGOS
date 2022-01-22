@@ -1,5 +1,3 @@
-from importlib.metadata import entry_points
-from posixpath import dirname
 from aws_cdk import *
 from aws_cdk import Stack
 from constructs import Construct
@@ -13,7 +11,8 @@ from .cloudwatch_logs_forwarder import CloudWatchLogsForwarder
 import aws_cdk.aws_lambda_python_alpha as _lambda
 import os
 import aws_cdk.aws_apigatewayv2_alpha as apigwv2
-import aws_cdk.aws_glue_alpha as glue
+import aws_cdk.aws_glue_alpha as glue_alpha
+import aws_cdk.aws_glue as glue
 from aws_cdk.aws_apigatewayv2_integrations_alpha import HttpLambdaIntegration
 import aws_cdk.aws_kinesisfirehose as firehose
 import aws_cdk.aws_iam as iam
@@ -27,26 +26,26 @@ class ARGOS_STACK(Stack):
 
         deliveryBucket = s3.Bucket(self, "deliveryBucket", auto_delete_objects=True, removal_policy=RemovalPolicy.DESTROY)
 
-        glue_database = glue.Database(self, "argos", database_name="argos")
-        table = glue.Table(self, "k8s_audit",
+        glue_database = glue_alpha.Database(self, "argos", database_name="argos")
+        table = glue_alpha.Table(self, "k8s_audit",
             database=glue_database,
             table_name="k8s_audit",
             columns=[
-                glue.Column(name="verb", type=glue.Schema.STRING),
-                glue.Column(name="groups", type=glue.Schema.STRING),
-                glue.Column(name="userAgent", type=glue.Schema.STRING),
-                glue.Column(name="sourceIPs", type=glue.Schema.STRING),
-                glue.Column(name="resource", type=glue.Schema.STRING),
-                glue.Column(name="subresource", type=glue.Schema.STRING),
-                glue.Column(name="name", type=glue.Schema.STRING),
-                glue.Column(name="namespace", type=glue.Schema.STRING),
-                glue.Column(name="impersonatedUser", type=glue.Schema.STRING),
-                glue.Column(name="encodeur", type=glue.Schema.array(input_string="bigint", is_primitive=True))
+                glue_alpha.Column(name="verb", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="groups", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="userAgent", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="sourceIPs", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="resource", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="subresource", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="name", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="namespace", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="impersonatedUser", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="encodeur", type=glue_alpha.Schema.array(input_string="bigint", is_primitive=True))
             ],
             partition_keys=[
-                glue.Column(name="username", type=glue.Schema.STRING)
+                glue_alpha.Column(name="username", type=glue_alpha.Schema.STRING)
             ],
-            data_format=glue.DataFormat.PARQUET,
+            data_format=glue_alpha.DataFormat.PARQUET,
             bucket=deliveryBucket)
 
         table.add_partition_index(key_names=["username"])
@@ -175,4 +174,28 @@ class ARGOS_STACK(Stack):
 
         lambda_con = CloudWatchLogsForwarder(self, "CloudWatchLogsForwarder", log_group=log_group, api_url=ingestion_api.api_endpoint)
 
+        crawler_role=iam.Role(self, "CrawlerRole", 
+            assumed_by=iam.ServicePrincipal("glue.amazonaws.com")
+        )
+
+        crawler_role.add_managed_policy(iam.ManagedPolicy.from_managed_policy_arn(self, "AWSGlueServiceRole", "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"))
+
+        deliveryBucket.grant_read(crawler_role)
+
+        crawler=glue.CfnCrawler(self, "Crawler",
+            role=crawler_role.role_arn,
+            targets=glue.CfnCrawler.TargetsProperty(
+                catalog_targets=[glue.CfnCrawler.CatalogTargetProperty(
+                    database_name=glue_database.database_name,
+                    tables=[table.table_name]
+                )]
+            ),
+            database_name=glue_database.database_name,
+            description="Crawler",
+            schedule=None,
+            schema_change_policy=glue.CfnCrawler.SchemaChangePolicyProperty(
+                delete_behavior="LOG",
+                update_behavior="LOG"
+            )
         
+        )
