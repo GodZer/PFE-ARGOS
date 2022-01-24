@@ -81,7 +81,6 @@ def createArrayfromjson(jsondict):
 
 
 def hash_string(string):
-    #return int.from_bytes(hashlib.sha256(str.encode(string.upper())).digest()[:4], "little")
     return hash(string)&0x1fffff
 
 
