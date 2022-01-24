@@ -1,5 +1,3 @@
-from importlib.metadata import entry_points
-from posixpath import dirname
 import os
 from aws_cdk import *
 from aws_cdk import Stack
@@ -24,14 +22,6 @@ class CloudWatchLogsForwarder(Construct):
             environment={
                 "API_URL": api_url
             })
-
-        # handler = Function(self, "LambdaAPIGateway",
-        #     runtime=Runtime.PYTHON_3_9,
-        #     handler="messageExtraction.lambda_handler",
-        #     code=Code.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/cloudwatchLogsForwarder'),
-        #     environment={
-        #         "API_URL": api_url
-        #     })
 
         logs.SubscriptionFilter(self, "subscriptionFilter", 
             log_group=log_group, 
