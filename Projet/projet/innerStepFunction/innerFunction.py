@@ -1,3 +1,4 @@
+from asyncio import Task
 from aws_cdk import *
 from constructs import Construct
 import aws_cdk.aws_stepfunctions as sf
@@ -24,12 +25,12 @@ class InnerFunction(Construct):
             )            
         )
 
-        outputBucket=s3.Bucket(self, 'OutputBucket',
+        outputBucketGlueJob=s3.Bucket(self, 'OutputBucketGlueJob',
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY
         )
 
-        outputBucket.grant_read_write(glue_job)
+        outputBucketGlueJob.grant_read_write(glue_job)
 
         deliveryBucket.grant_read(glue_job)
 
@@ -40,18 +41,64 @@ class InnerFunction(Construct):
              integration_pattern=sf.IntegrationPattern.RUN_JOB,
              arguments=sf.TaskInput.from_object(
                 {
-                    "username": sf.JsonPath.string_at("$.partition"),
-                    "bucket_name": outputBucket.bucket_name,
-                    "database_name": glueDatabase.database_name,
-                    "table_name": glueTable.table_name
+                    "--username": sf.JsonPath.string_at("$.partition"),
+                    "--bucket_name": outputBucketGlueJob.bucket_name,
+                    "--database_name": glueDatabase.database_name,
+                    "--table_name": glueTable.table_name
                 }
             )
         )
 
+        outputBucketObject2Vec=s3.Bucket(self, 'OutputBucketObject2Vec',
+            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.DESTROY
+        )
+
+        # sagemaker_role=iam.Role(self, "SageMakerRole", 
+        #      assumed_by=iam.ServicePrincipal("sagemaker.amazonaws.com")
+        # )
+
+        # sagemaker_role.add_managed_policy(iam.ManagedPolicy.from_managed_policy_arn(self, "AmazonSageMakerFullAccess", "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"))
+
+        # outputBucketGlueJob.grant_read(sagemaker_role)
+        # outputBucketObject2Vec.grant_read_write(sagemaker_role)
+
+        trainingObject2Vec = sft.SageMakerCreateTrainingJob(self, "Object2Vec",
+        algorithm_specification=sft.AlgorithmSpecification(
+            algorithm_name="Object2Vec",
+            training_input_mode=sft.InputMode.FILE
+        ),
+        input_data_config=[sft.Channel(
+            channel_name="train",
+            data_source=sft.DataSource(
+                s3_data_source=sft.S3DataSource(
+                    s3_location=sft.S3Location.from_bucket(outputBucketGlueJob, "/")
+                )
+            )
+        )
+        ],
+        output_data_config=sft.OutputDataConfig(
+            s3_output_location=sft.S3Location.from_bucket(outputBucketObject2Vec, "/")
+        ),
+        training_job_name="TrainingObject2Vec",
+        integration_pattern=sf.IntegrationPattern.RUN_JOB
+        )
+
+        outputBucketGlueJob.grant_read(trainingObject2Vec)
+        outputBucketObject2Vec.grant_read_write(trainingObject2Vec)
+
+
         #Create Chain        
 
-        template=step1
+        template=step1.next(trainingObject2Vec)
 
         #Create state machine
 
         sm=sf.StateMachine(self, "trainingWorkflow", definition=template)
+
+        #Transform job
+        #sm_transformer = sgm.transformer.Transformer(model_name = "Object2Vec"
+        #                   instance_count = ,
+        #                   instance_type = ,
+        #                   output_path = 
+        #                   )
