@@ -199,4 +199,4 @@ final = crossed.withColumn("similarity", similarity("a.verb","b.verb",
 df_training = final.select("a.encodeur","b.encodeur","similarity")
 df_training = df_training.selectExpr("a.encodeur as in0","b.encodeur as in1","similarity as label")
 df_training=DynamicFrame.fromDF(df_training, glue_ctx=glueContext, name="Object2VecTraining")
-glueContext.write_from_options(df_training,"s3", connection_options={"path":f"s3://{bucket_name}/{username}/training"}, format="json")
+glueContext.write_from_options(df_training,"s3", connection_options={"path":f"s3://{bucket_name}/{username}/training_O2V"}, format="json")

@@ -1,4 +1,3 @@
-from asyncio import Task
 from aws_cdk import *
 from constructs import Construct
 import aws_cdk.aws_stepfunctions as sf
@@ -25,12 +24,28 @@ class InnerFunction(Construct):
             )            
         )
 
-        outputBucketGlueJob=s3.Bucket(self, 'OutputBucketGlueJob',
+        datasetStorageBucket=s3.Bucket(self, 'DatasetStorageBucket',
             auto_delete_objects=True,
             removal_policy=RemovalPolicy.DESTROY
         )
 
-        outputBucketGlueJob.grant_read_write(glue_job)
+        modelStorageBucket=s3.Bucket(self, 'ModelStorageBucket',
+            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.DESTROY
+        )
+
+        valueCalculator = sf.Pass(self, "PathCalculator", 
+            parameters={
+                "partition.$": "$.partition",
+                "object2vec_training_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/training_O2V/', $.partition)",
+                "object2vec_inference_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/ingestion_transform/', $.partition)",
+                "object2vec_model_path.$": f"States.Format('s3://{modelStorageBucket.bucket_name}/{{}}/model_O2V/', $.partition)",
+                "rcf_model_path.$": f"States.Format('s3://{modelStorageBucket.bucket_name}/{{}}/model_RCF/', $.partition)",
+                "rcf_training_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/training_RCF/', $.partition)",
+            }
+        )
+
+        datasetStorageBucket.grant_read_write(glue_job)
 
         deliveryBucket.grant_read(glue_job)
 
@@ -42,55 +57,72 @@ class InnerFunction(Construct):
              arguments=sf.TaskInput.from_object(
                 {
                     "--username": sf.JsonPath.string_at("$.partition"),
-                    "--bucket_name": outputBucketGlueJob.bucket_name,
+                    "--bucket_name": datasetStorageBucket.bucket_name,
                     "--database_name": glueDatabase.database_name,
                     "--table_name": glueTable.table_name
                 }
-            )
+            ),
+            result_path=sf.JsonPath.DISCARD
         )
 
-        outputBucketObject2Vec=s3.Bucket(self, 'OutputBucketObject2Vec',
-            auto_delete_objects=True,
-            removal_policy=RemovalPolicy.DESTROY
+        sagemaker_role=iam.Role(self, "SageMakerRole", 
+             assumed_by=iam.ServicePrincipal("sagemaker.amazonaws.com")
         )
 
-        # sagemaker_role=iam.Role(self, "SageMakerRole", 
-        #      assumed_by=iam.ServicePrincipal("sagemaker.amazonaws.com")
-        # )
+        sagemaker_role.add_managed_policy(iam.ManagedPolicy.from_managed_policy_arn(self, "AmazonSageMakerFullAccess", "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"))
 
-        # sagemaker_role.add_managed_policy(iam.ManagedPolicy.from_managed_policy_arn(self, "AmazonSageMakerFullAccess", "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"))
+        sagemaker_role.add_managed_policy(iam.ManagedPolicy.from_managed_policy_arn(self, "S3FullAccess", "arn:aws:iam::aws:policy/AmazonS3FullAccess"))
 
-        # outputBucketGlueJob.grant_read(sagemaker_role)
-        # outputBucketObject2Vec.grant_read_write(sagemaker_role)
+        datasetStorageBucket.grant_read(sagemaker_role)
+        modelStorageBucket.grant_read_write(sagemaker_role)
 
         trainingObject2Vec = sft.SageMakerCreateTrainingJob(self, "Object2Vec",
+        role=sagemaker_role,
         algorithm_specification=sft.AlgorithmSpecification(
-            algorithm_name="Object2Vec",
+            training_image=sft.DockerImage.from_registry("749696950732.dkr.ecr.eu-west-3.amazonaws.com/object2vec:1"),
             training_input_mode=sft.InputMode.FILE
         ),
         input_data_config=[sft.Channel(
             channel_name="train",
             data_source=sft.DataSource(
                 s3_data_source=sft.S3DataSource(
-                    s3_location=sft.S3Location.from_bucket(outputBucketGlueJob, "/")
+                    s3_location=sft.S3Location.from_json_expression("$.object2vec_training_dataset_path")
                 )
             )
         )
         ],
         output_data_config=sft.OutputDataConfig(
-            s3_output_location=sft.S3Location.from_bucket(outputBucketObject2Vec, "/")
+            s3_output_location=sft.S3Location.from_json_expression("$.object2vec_model_path")
         ),
-        training_job_name="TrainingObject2Vec",
-        integration_pattern=sf.IntegrationPattern.RUN_JOB
+        training_job_name=sf.JsonPath.string_at("$$.Execution.Name"),
+        hyperparameters={
+            "dropout": "0.2",
+            "enc0_max_seq_len": "10",
+            "enc0_network": "bilstm",
+            "enc0_token_embedding_dim": "10",
+            "enc0_vocab_size": "2097152",
+            "enc_dim": "10",
+            "epochs": "4",
+            "learning_rate": "0.01",
+            "mini_batch_size": "4096",
+            "mlp_activation": "relu",
+            "mlp_dim": "512",
+            "mlp_layers": "2",
+            "output_layer": "mean_squared_error",
+            "tied_token_embedding_weight": "true", 
+        },
+        integration_pattern=sf.IntegrationPattern.RUN_JOB,
+        resource_config=sft.ResourceConfig(instance_count=1, instance_type=ec2.InstanceType("m5.4xlarge"), volume_size=Size.gibibytes(500)),
+        result_path=sf.JsonPath.DISCARD
         )
 
-        outputBucketGlueJob.grant_read(trainingObject2Vec)
-        outputBucketObject2Vec.grant_read_write(trainingObject2Vec)
-
+        trainingObject2Vec.role.attach_inline_policy(iam.Policy(self, "GrantPassRole", document=iam.PolicyDocument(
+            statements=[iam.PolicyStatement(actions=["iam:PassRole"], resources=[sagemaker_role.role_arn])]
+        )))
 
         #Create Chain        
 
-        template=step1.next(trainingObject2Vec)
+        template=valueCalculator.next(step1).next(trainingObject2Vec)
 
         #Create state machine
 
