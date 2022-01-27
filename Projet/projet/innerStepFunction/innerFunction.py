@@ -41,9 +41,11 @@ class InnerFunction(Construct):
                 "object2vec_inference_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/ingestion_transform/', $.partition)",
                 "object2vec_model_path.$": f"States.Format('s3://{modelStorageBucket.bucket_name}/{{}}/model_O2V/', $.partition)",
                 "rcf_model_path.$": f"States.Format('s3://{modelStorageBucket.bucket_name}/{{}}/model_RCF/', $.partition)",
-                "rcf_training_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/training_RCF/', $.partition)",
+                "rcf_training_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/training_RCF/', $.partition)"
             }
         )
+
+        
 
         datasetStorageBucket.grant_read_write(glue_job)
 
@@ -51,7 +53,7 @@ class InnerFunction(Construct):
 
         glueTable.grant_read(glue_job)
 
-        step1 = sft.GlueStartJobRun(self, "GlueJobObject2Vec", 
+        glueJobObject2Vec = sft.GlueStartJobRun(self, "GlueJobObject2Vec", 
              glue_job_name=glue_job.job_name,
              integration_pattern=sf.IntegrationPattern.RUN_JOB,
              arguments=sf.TaskInput.from_object(
@@ -76,7 +78,7 @@ class InnerFunction(Construct):
         datasetStorageBucket.grant_read(sagemaker_role)
         modelStorageBucket.grant_read_write(sagemaker_role)
 
-        trainingObject2Vec = sft.SageMakerCreateTrainingJob(self, "Object2Vec",
+        trainingObject2Vec = sft.SageMakerCreateTrainingJob(self, "CreateObject2VecTrainingJob",
         role=sagemaker_role,
         algorithm_specification=sft.AlgorithmSpecification(
             training_image=sft.DockerImage.from_registry("749696950732.dkr.ecr.eu-west-3.amazonaws.com/object2vec:1"),
@@ -113,16 +115,28 @@ class InnerFunction(Construct):
         },
         integration_pattern=sf.IntegrationPattern.RUN_JOB,
         resource_config=sft.ResourceConfig(instance_count=1, instance_type=ec2.InstanceType("m5.4xlarge"), volume_size=Size.gibibytes(500)),
-        result_path=sf.JsonPath.DISCARD
+        result_selector={
+            "model_path": sf.JsonPath.string_at("$.ModelArtifacts.S3ModelArtifacts")
+        },
+        result_path="$.training_O2V"
+        #result_path=sf.JsonPath.DISCARD
         )
 
         trainingObject2Vec.role.attach_inline_policy(iam.Policy(self, "GrantPassRole", document=iam.PolicyDocument(
             statements=[iam.PolicyStatement(actions=["iam:PassRole"], resources=[sagemaker_role.role_arn])]
         )))
 
+        createObject2VecModel= sft.SageMakerCreateModel(self, "CreateObject2VecModel",
+            model_name=sf.JsonPath.string_at("$$.Execution.Name"),
+            primary_container= sft.ContainerDefinition(
+                image=sft.DockerImage.from_registry("749696950732.dkr.ecr.eu-west-3.amazonaws.com/object2vec:1"),
+                model_s3_location=sft.S3Location.from_json_expression("$.training_O2V.model_path")
+            )
+        )
+
         #Create Chain        
 
-        template=valueCalculator.next(step1).next(trainingObject2Vec)
+        template=valueCalculator.next(glueJobObject2Vec).next(trainingObject2Vec).next(createObject2VecModel)
 
         #Create state machine
 
