@@ -6,7 +6,6 @@ import aws_cdk.aws_s3 as s3
 import aws_cdk.aws_ec2 as ec2
 import aws_cdk.aws_glue_alpha as glue_alpha
 import aws_cdk.aws_iam as iam
-import aws_cdk.aws_sagemaker as sgm
 import os
 
 class InnerFunction(Construct):
@@ -39,6 +38,7 @@ class InnerFunction(Construct):
                 "partition.$": "$.partition",
                 "object2vec_training_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/training_O2V/', $.partition)",
                 "object2vec_inference_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/ingestion_transform/', $.partition)",
+                "object2vec_inference_output_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/ingestion_transform_output/', $.partition)",
                 "object2vec_model_path.$": f"States.Format('s3://{modelStorageBucket.bucket_name}/{{}}/model_O2V/', $.partition)",
                 "rcf_model_path.$": f"States.Format('s3://{modelStorageBucket.bucket_name}/{{}}/model_RCF/', $.partition)",
                 "rcf_training_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/training_RCF/', $.partition)"
@@ -119,7 +119,6 @@ class InnerFunction(Construct):
             "model_path": sf.JsonPath.string_at("$.ModelArtifacts.S3ModelArtifacts")
         },
         result_path="$.training_O2V"
-        #result_path=sf.JsonPath.DISCARD
         )
 
         trainingObject2Vec.role.attach_inline_policy(iam.Policy(self, "GrantPassRole", document=iam.PolicyDocument(
@@ -131,20 +130,42 @@ class InnerFunction(Construct):
             primary_container= sft.ContainerDefinition(
                 image=sft.DockerImage.from_registry("749696950732.dkr.ecr.eu-west-3.amazonaws.com/object2vec:1"),
                 model_s3_location=sft.S3Location.from_json_expression("$.training_O2V.model_path")
-            )
+            ),
+            result_selector={
+                 "model_arn": sf.JsonPath.string_at("$.ModelArn"),
+                 "model_name": sf.JsonPath.string_at("$$.Execution.Name")
+            },
+            result_path="$.object2vec_model"
         )
 
+        datasetStorageBucket.grant_read_write(createObject2VecModel)
+        modelStorageBucket.grant_read(createObject2VecModel)
+
+        batchTransformJob=sft.SageMakerCreateTransformJob(self, "BatchTransformJob",
+            transform_job_name=sf.JsonPath.string_at("$$.Execution.Name"),
+            model_name=sf.JsonPath.string_at("$.object2vec_model.model_name"),
+            transform_input=sft.TransformInput(
+                transform_data_source=sft.TransformDataSource(
+                    s3_data_source=sft.TransformS3DataSource(
+                        s3_uri=sf.JsonPath.string_at("$.object2vec_inference_dataset_path"),
+                        s3_data_type=sft.S3DataType.S3_PREFIX
+                    )
+                )
+            ),
+            transform_output=sft.TransformOutput(
+                s3_output_path=sf.JsonPath.string_at("$.object2vec_inference_output_path")
+            ),
+            transform_resources=sft.TransformResources(instance_count=1, instance_type=ec2.InstanceType("m5.4xlarge")),
+            integration_pattern=sf.IntegrationPattern.RUN_JOB
+        )
+        
         #Create Chain        
 
-        template=valueCalculator.next(glueJobObject2Vec).next(trainingObject2Vec).next(createObject2VecModel)
+        template=valueCalculator.next(glueJobObject2Vec).next(trainingObject2Vec).next(createObject2VecModel).next(batchTransformJob)
 
         #Create state machine
 
         sm=sf.StateMachine(self, "trainingWorkflow", definition=template)
 
-        #Transform job
-        #sm_transformer = sgm.transformer.Transformer(model_name = "Object2Vec"
-        #                   instance_count = ,
-        #                   instance_type = ,
-        #                   output_path = 
-        #                   )
+        datasetStorageBucket.grant_read_write(sm)
+        modelStorageBucket.grant_read(sm)
