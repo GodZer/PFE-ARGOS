@@ -156,12 +156,37 @@ class InnerFunction(Construct):
                 s3_output_path=sf.JsonPath.string_at("$.object2vec_inference_output_path")
             ),
             transform_resources=sft.TransformResources(instance_count=1, instance_type=ec2.InstanceType("m5.4xlarge")),
-            integration_pattern=sf.IntegrationPattern.RUN_JOB
+            integration_pattern=sf.IntegrationPattern.RUN_JOB,
+            result_path=sf.JsonPath.DISCARD
         )
+
+        glue_job_rcf=glue_alpha.Job(self, "PythonShellJobRCF",
+            executable=glue_alpha.JobExecutable.python_etl(
+                glue_version=glue_alpha.GlueVersion.V3_0,
+                python_version=glue_alpha.PythonVersion.THREE,
+                script=glue_alpha.AssetCode.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/glueETLRandomCutForest/glueETLRandomCutForest.py'),
+            )            
+        )
+
+        datasetStorageBucket.grant_read_write(glue_job_rcf)
+        deliveryBucket.grant_read(glue_job_rcf)
+        
+        glueJobRCF = sft.GlueStartJobRun(self, "GlueJobRCF", 
+             glue_job_name=glue_job_rcf.job_name,
+             integration_pattern=sf.IntegrationPattern.RUN_JOB,
+             arguments=sf.TaskInput.from_object(
+                {
+                    "--username": sf.JsonPath.string_at("$.partition"),
+                    "--bucket_name": datasetStorageBucket.bucket_name
+                }
+            ),
+            result_path=sf.JsonPath.DISCARD
+        )
+
         
         #Create Chain        
 
-        template=valueCalculator.next(glueJobObject2Vec).next(trainingObject2Vec).next(createObject2VecModel).next(batchTransformJob)
+        template=valueCalculator.next(glueJobObject2Vec).next(trainingObject2Vec).next(createObject2VecModel).next(batchTransformJob).next(glueJobRCF)
 
         #Create state machine
 

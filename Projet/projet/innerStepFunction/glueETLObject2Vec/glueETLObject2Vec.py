@@ -3,15 +3,13 @@ from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
-from awsglue.job import Job
 from math import floor
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
+from awsglue.dynamicframe import DynamicFrame
 from pyspark.sql.functions import col
 from pyspark.sql.types import FloatType
 from pyspark.sql.functions import udf
-from awsglue.dynamicframe import DynamicFrame
-from awsglue.utils import getResolvedOptions
 
 args = getResolvedOptions(sys.argv,
                           ['username',
