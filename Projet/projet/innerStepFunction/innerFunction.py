@@ -7,6 +7,7 @@ import aws_cdk.aws_ec2 as ec2
 import aws_cdk.aws_glue_alpha as glue_alpha
 import aws_cdk.aws_iam as iam
 import os
+from .createOrUpdateInferenceEndpointAction import CreateOrUpdateInferenceEndpointAction 
 
 class InnerFunction(Construct):
 
@@ -47,7 +48,8 @@ class InnerFunction(Construct):
                 "object2vec_model_name.$": f"States.Format('object2vec-model-name-{{}}', $$.Execution.Name)",
                 "Batch-transform-job.$": f"States.Format('Batch-transform-job-{{}}', $$.Execution.Name)",
                 "RCF-training-job.$": f"States.Format('RCF-training-job-{{}}', $$.Execution.Name)",
-                "RCF_model_name.$": f"States.Format('RCF-model-name-{{}}', $$.Execution.Name)"
+                "RCF_model_name.$": f"States.Format('RCF-model-name-{{}}', $$.Execution.Name)",
+                "endpoint_config_name.$": f"States.Format('{{}}-endpoint-config', $$.Execution.Name)"
             }
         )
 
@@ -236,12 +238,51 @@ class InnerFunction(Construct):
             result_path="$.RCF_model"
         )
 
+        createEndPointConfig=sft.SageMakerCreateEndpointConfig(self, "CreateEndPointConfigRCF",
+            endpoint_config_name=sf.JsonPath.string_at("$.endpoint_config_name"),
+            production_variants=[
+                sft.ProductionVariant(
+                    instance_type=ec2.InstanceType("m5.large"),
+                    model_name=sf.JsonPath.string_at("$.object2vec_model_name"),
+                    variant_name="o2v",
+                    initial_instance_count=1
+                ),
+                sft.ProductionVariant(
+                    instance_type=ec2.InstanceType("m5.large"),
+                    model_name=sf.JsonPath.string_at("$.RCF_model_name"),
+                    variant_name="rcf",
+                    initial_instance_count=1
+                )
+            ],
+            result_path=sf.JsonPath.DISCARD
+        )
+
+        createEndpointConfig = sf.StateMachine(self, "createOrUpdateEndpointSM", definition=CreateOrUpdateInferenceEndpointAction(self, "endpointConfig"))
+
+        updateEndpoint = sft.StepFunctionsStartExecution(self, "createOrEndpoint",
+            state_machine=createEndPointConfig,
+            input=sf.TaskInput.from_object({
+                "username": sf.JsonPath.string_at("$.partition"),
+                "endpoint_configuration_name": sf.JsonPath.string_at("$.endpoint_config_name")
+            }),
+            integration_pattern=sf.IntegrationPattern.RUN_JOB,
+            result_path=sf.JsonPath.DISCARD)
+
         datasetStorageBucket.grant_read_write(createRCFModel)
         modelStorageBucket.grant_read(createRCFModel)
 
         #Create Chain        
 
-        template=valueCalculator.next(glueJobObject2Vec).next(trainingObject2Vec).next(createObject2VecModel).next(batchTransformJob).next(glueJobRCF).next(trainingRCF).next(createRCFModel)
+        template=valueCalculator \
+            .next(glueJobObject2Vec) \
+            .next(trainingObject2Vec) \
+            .next(createObject2VecModel) \
+            .next(batchTransformJob) \
+            .next(glueJobRCF) \
+            .next(trainingRCF) \
+            .next(createRCFModel) \
+            .next(createEndPointConfig) \
+            .next(updateEndpoint)
 
         #Create state machine
 
