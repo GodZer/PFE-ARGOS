@@ -3,15 +3,13 @@ from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
-from awsglue.job import Job
 from math import floor
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
+from awsglue.dynamicframe import DynamicFrame
 from pyspark.sql.functions import col
 from pyspark.sql.types import FloatType
 from pyspark.sql.functions import udf
-from awsglue.dynamicframe import DynamicFrame
-from awsglue.utils import getResolvedOptions
 
 args = getResolvedOptions(sys.argv,
                           ['username',
@@ -142,6 +140,8 @@ df = glueContext.create_dynamic_frame_from_catalog(
     push_down_predicate=f"username='{username}'"
     )
 
+df_batch_transform = df.toDF().select("encodeur")
+
 def hash_array_udf(array):
     def hasheur(input):
         return hash(input) & 0x1fffff
@@ -197,6 +197,9 @@ final = crossed.withColumn("similarity", similarity("a.verb","b.verb",
                                                     "a.impersonateduser","b.impersonateduser"))
 
 df_training = final.select("a.encodeur","b.encodeur","similarity")
+df_batch_transform = df_batch_transform.selectExpr("encodeur as in0")
 df_training = df_training.selectExpr("a.encodeur as in0","b.encodeur as in1","similarity as label")
 df_training=DynamicFrame.fromDF(df_training, glue_ctx=glueContext, name="Object2VecTraining")
-glueContext.write_from_options(df_training,"s3", connection_options={"path":f"s3://{bucket_name}/{username}/training"}, format="json")
+df_batch_transform = DynamicFrame.fromDF(df_batch_transform, glue_ctx=glueContext, name="Object2VecInference")
+glueContext.write_from_options(df_training,"s3", connection_options={"path":f"s3://{bucket_name}/{username}/training_O2V"}, format="json")
+glueContext.write_from_options(df_batch_transform,"s3", connection_options={"path":f"s3://{bucket_name}/{username}/ingestion_transform"}, format="json")
