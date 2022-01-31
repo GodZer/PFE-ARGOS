@@ -238,7 +238,7 @@ class InnerFunction(Construct):
             result_path="$.RCF_model"
         )
 
-        createEndPointConfig=sft.SageMakerCreateEndpointConfig(self, "CreateEndPointConfigRCF",
+        createEndPointConfig=sft.SageMakerCreateEndpointConfig(self, "CreateEndPointConfig",
             endpoint_config_name=sf.JsonPath.string_at("$.endpoint_config_name"),
             production_variants=[
                 sft.ProductionVariant(
@@ -257,10 +257,10 @@ class InnerFunction(Construct):
             result_path=sf.JsonPath.DISCARD
         )
 
-        createEndpointConfig = sf.StateMachine(self, "createOrUpdateEndpointSM", definition=CreateOrUpdateInferenceEndpointAction(self, "endpointConfig"))
+        updateEndPointStateMachine = sf.StateMachine(self, "createOrUpdateEndpointSM", definition=CreateOrUpdateInferenceEndpointAction(self, "endpointConfig"))
 
-        updateEndpoint = sft.StepFunctionsStartExecution(self, "createOrEndpoint",
-            state_machine=createEndPointConfig,
+        updateEndpoint = sft.StepFunctionsStartExecution(self, "createOrUpdateEndpoint",
+            state_machine=updateEndPointStateMachine,
             input=sf.TaskInput.from_object({
                 "username": sf.JsonPath.string_at("$.partition"),
                 "endpoint_configuration_name": sf.JsonPath.string_at("$.endpoint_config_name")
