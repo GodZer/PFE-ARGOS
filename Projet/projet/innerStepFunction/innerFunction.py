@@ -9,6 +9,17 @@ import aws_cdk.aws_iam as iam
 import os
 from .createOrUpdateInferenceEndpointAction import CreateOrUpdateInferenceEndpointAction 
 
+
+"""
+Expected input:
+
+{
+    "partition": <string>
+    "partition_sanitized": <string>
+}
+
+"""
+
 class InnerFunction(Construct):
 
     def __init__(self, scope: Construct, construct_id: str, *kwargs, deliveryBucket: s3.Bucket, glueTable: glue_alpha.Table, glueDatabase: glue_alpha.Database) -> None:
@@ -37,6 +48,7 @@ class InnerFunction(Construct):
         valueCalculator = sf.Pass(self, "PathCalculator", 
             parameters={
                 "partition.$": "$.partition",
+                "partition_sanitized.$": "$.partition_sanitized",
                 "Execution.Name.$": "$$.Execution.Name",
                 "object2vec_training_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/training_O2V/', $.partition)",
                 "object2vec_inference_dataset_path.$": f"States.Format('s3://{datasetStorageBucket.bucket_name}/{{}}/ingestion_transform/', $.partition)",
@@ -49,7 +61,7 @@ class InnerFunction(Construct):
                 "Batch-transform-job.$": f"States.Format('Batch-transform-job-{{}}', $$.Execution.Name)",
                 "RCF-training-job.$": f"States.Format('RCF-training-job-{{}}', $$.Execution.Name)",
                 "RCF_model_name.$": f"States.Format('RCF-model-name-{{}}', $$.Execution.Name)",
-                "endpoint_config_name.$": f"States.Format('{{}}-endpoint-config', $$.Execution.Name)"
+                "endpoint_config_name.$": f"States.Format('{{}}-endpoint-config', $.partition_sanitized)"
             }
         )
 
@@ -262,7 +274,7 @@ class InnerFunction(Construct):
         updateEndpoint = sft.StepFunctionsStartExecution(self, "createOrUpdateEndpoint",
             state_machine=updateEndPointStateMachine,
             input=sf.TaskInput.from_object({
-                "username": sf.JsonPath.string_at("$.partition"),
+                "username": sf.JsonPath.string_at("$.partition_sanitized"),
                 "endpoint_configuration_name": sf.JsonPath.string_at("$.endpoint_config_name")
             }),
             integration_pattern=sf.IntegrationPattern.RUN_JOB,
