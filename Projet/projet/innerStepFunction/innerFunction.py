@@ -32,7 +32,9 @@ class InnerFunction(Construct):
                 glue_version=glue_alpha.GlueVersion.V3_0,
                 python_version=glue_alpha.PythonVersion.THREE,
                 script=glue_alpha.AssetCode.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/glueETLObject2Vec/glueETLObject2Vec.py'),
-            )            
+            ),
+            worker_type=glue_alpha.WorkerType.STANDARD,
+            worker_count=50
         )
 
         datasetStorageBucket=s3.Bucket(self, 'DatasetStorageBucket',
@@ -183,7 +185,9 @@ class InnerFunction(Construct):
                 glue_version=glue_alpha.GlueVersion.V3_0,
                 python_version=glue_alpha.PythonVersion.THREE,
                 script=glue_alpha.AssetCode.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/glueETLRandomCutForest/glueETLRandomCutForest.py'),
-            )            
+            ),
+            worker_type=glue_alpha.WorkerType.STANDARD,
+            worker_count=50
         )
 
         datasetStorageBucket.grant_read_write(glue_job_rcf)
@@ -298,7 +302,7 @@ class InnerFunction(Construct):
 
         #Create state machine
 
-        sm=sf.StateMachine(self, "trainingWorkflow", definition=template)
+        self.sm=sf.StateMachine(self, "trainingWorkflow", definition=template)
 
-        datasetStorageBucket.grant_read_write(sm)
-        modelStorageBucket.grant_read(sm)
+        datasetStorageBucket.grant_read_write(self.sm)
+        modelStorageBucket.grant_read(self.sm)

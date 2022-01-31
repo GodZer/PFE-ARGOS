@@ -7,6 +7,7 @@ import aws_cdk.aws_apigateway as apigateway
 import aws_cdk.aws_logs as logs
 import aws_cdk.aws_s3 as s3
 import aws_cdk.aws_logs_destinations as destinations
+from .innerStepFunction.trainingStepFunction import TrainingStepFunction
 from .innerStepFunction.innerFunction import InnerFunction
 from .cloudwatch_logs_forwarder import CloudWatchLogsForwarder
 import aws_cdk.aws_lambda_python_alpha as _lambda
@@ -206,3 +207,7 @@ class ARGOS_STACK(Stack):
         )
 
         user_training_function=InnerFunction(self, "UserTrainingFunction", deliveryBucket=deliveryBucket, glueTable=table, glueDatabase=glue_database)
+
+        training_step_function=TrainingStepFunction(self, "TrainingStepFunction", crawler_name=crawler.ref, inner_function=user_training_function, table=table, database=glue_database)
+
+        
