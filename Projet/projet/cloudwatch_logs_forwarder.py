@@ -26,4 +26,5 @@ class CloudWatchLogsForwarder(Construct):
         logs.SubscriptionFilter(self, "subscriptionFilter", 
             log_group=log_group, 
             destination=destinations.LambdaDestination(handler),
-            filter_pattern=logs.FilterPattern.any_term("admin"))
+            filter_pattern=logs.FilterPattern.all_terms()
+        )

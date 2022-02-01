@@ -34,7 +34,7 @@ class InnerFunction(Construct):
                 script=glue_alpha.AssetCode.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/glueETLObject2Vec/glueETLObject2Vec.py'),
             ),
             worker_type=glue_alpha.WorkerType.STANDARD,
-            worker_count=1
+            worker_count=2
         )
 
         datasetStorageBucket=s3.Bucket(self, 'DatasetStorageBucket',
@@ -175,7 +175,7 @@ class InnerFunction(Construct):
             transform_output=sft.TransformOutput(
                 s3_output_path=sf.JsonPath.string_at("$.object2vec_inference_output_path")
             ),
-            transform_resources=sft.TransformResources(instance_count=2, instance_type=ec2.InstanceType("m5.4xlarge")),
+            transform_resources=sft.TransformResources(instance_count=4, instance_type=ec2.InstanceType("m5.4xlarge")),
             integration_pattern=sf.IntegrationPattern.RUN_JOB,
             result_path=sf.JsonPath.DISCARD
         )
@@ -187,7 +187,7 @@ class InnerFunction(Construct):
                 script=glue_alpha.AssetCode.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/glueETLRandomCutForest/glueETLRandomCutForest.py'),
             ),
             worker_type=glue_alpha.WorkerType.STANDARD,
-            worker_count=1
+            worker_count=2
         )
 
         datasetStorageBucket.grant_read_write(glue_job_rcf)
@@ -258,13 +258,13 @@ class InnerFunction(Construct):
             endpoint_config_name=sf.JsonPath.string_at("$.endpoint_config_name"),
             production_variants=[
                 sft.ProductionVariant(
-                    instance_type=ec2.InstanceType("m5.large"),
+                    instance_type=ec2.InstanceType("inf1.xlarge"),
                     model_name=sf.JsonPath.string_at("$.object2vec_model_name"),
                     variant_name="o2v",
                     initial_instance_count=1
                 ),
                 sft.ProductionVariant(
-                    instance_type=ec2.InstanceType("m5.large"),
+                    instance_type=ec2.InstanceType("inf1.xlarge"),
                     model_name=sf.JsonPath.string_at("$.RCF_model_name"),
                     variant_name="rcf",
                     initial_instance_count=1

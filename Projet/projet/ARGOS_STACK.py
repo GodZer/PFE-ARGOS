@@ -44,6 +44,7 @@ class ARGOS_STACK(Stack):
                 glue_alpha.Column(name="resource", type=glue_alpha.Schema.STRING),
                 glue_alpha.Column(name="subresource", type=glue_alpha.Schema.STRING),
                 glue_alpha.Column(name="name", type=glue_alpha.Schema.STRING),
+                glue_alpha.Column(name="apiGroup", type=glue_alpha.Schema.STRING),
                 glue_alpha.Column(name="namespace", type=glue_alpha.Schema.STRING),
                 glue_alpha.Column(name="impersonatedUser", type=glue_alpha.Schema.STRING),
                 glue_alpha.Column(name="encodeur", type=glue_alpha.Schema.array(input_string="bigint", is_primitive=True))
@@ -96,7 +97,7 @@ class ARGOS_STACK(Stack):
                 prefix="username=!{partitionKeyFromQuery:username}/",
                 error_output_prefix="ingestionError/",
                 buffering_hints=firehose.CfnDeliveryStream.BufferingHintsProperty(
-                    interval_in_seconds=Duration.minutes(15).to_seconds(),
+                    interval_in_seconds=Duration.minutes(5).to_seconds(),
                     size_in_m_bs=Size.mebibytes(128).to_mebibytes()
                 ),
                 data_format_conversion_configuration=firehose.CfnDeliveryStream.DataFormatConversionConfigurationProperty(

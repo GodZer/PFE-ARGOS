@@ -140,6 +140,9 @@ df = glueContext.create_dynamic_frame_from_catalog(
     push_down_predicate=f"username='{username}'"
     )
 
+
+df=df.repartition(1)
+
 df_batch_transform = df.toDF().select("encodeur")
 
 def hash_array_udf(array):
@@ -153,7 +156,7 @@ hash_array = udf(hash_array_udf, IntegerType())
 hashed_df = df.toDF().withColumn('hash', hash_array(col("encodeur")))
 a, b=hashed_df.alias("a"), hashed_df.alias("b")
 crossed=a.join(b, col("a.hash")< col("b.hash"))
-columns = ["verb","username","groups","useragent","sourceips","resource","subresource","name","namespace","impersonateduser"]
+columns = ["verb","username","groups","useragent","sourceips","resource","subresource","name","apigroup","namespace","impersonateduser"]
 
 w = [3,4,4,2,1,2,2,2,2,4]
 
@@ -166,6 +169,7 @@ def similarity_udf(
     resourceA, resourceB,
     subresourceA, subresourceB,
     nameA, nameB,
+    apigroupA, apigroupB,
     namespaceA, namespaceB,
     impersonateduserA, impersonateduserB
 ):
@@ -178,6 +182,7 @@ def similarity_udf(
     simil += w[5] * jaro_Winkler(resourceA, resourceB)
     simil += w[6] * jaro_Winkler(subresourceA, subresourceB)
     simil += w[7] * jaro_Winkler(nameA, nameB)
+    simil += w[8] * jaro_Winkler(apigroupA, apigroupB)
     simil += w[8] * jaro_Winkler(namespaceA, namespaceB)
     simil += w[9] * jaro_Winkler(impersonateduserA, impersonateduserB)
     simil /= sum(w)
@@ -193,6 +198,7 @@ final = crossed.withColumn("similarity", similarity("a.verb","b.verb",
                                                     "a.resource","b.resource",
                                                     "a.subresource","b.subresource",
                                                     "a.name","b.name",
+                                                    "a.apigroup","b.apigroup",
                                                     "a.namespace","b.namespace",
                                                     "a.impersonateduser","b.impersonateduser"))
 

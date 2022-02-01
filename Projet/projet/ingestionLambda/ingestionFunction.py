@@ -16,6 +16,7 @@ columns = [
     "resource",
     "subresource",
     "name",
+    "apiGroup",
     "namespace",
     "impersonatedUser",
 ]
