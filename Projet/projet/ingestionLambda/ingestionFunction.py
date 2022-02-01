@@ -1,9 +1,11 @@
 import json
 import hashlib
+import sys
 import boto3
 import os
 
 firehose = boto3.client('firehose')
+sagemaker = boto3.client('sagemaker-runtime')
 
 columns = [
     "verb",
@@ -34,6 +36,46 @@ def handler(event, context):
     dictionary["encodeur"] = hash_arrayString(array)
     solutionJson = json.dumps(dictionary)
     
+    object2vec_request={
+        "instances": [
+            {
+                "in0": dictionary["encodeur"]
+            }
+        ]
+    }
+
+    try:
+        object2vec_request={
+            "instances": [
+                {
+                    "in0": dictionary["encodeur"]
+                }
+            ]
+        }
+        inference_endpoint_name=get_inference_endpoint_name(dictionary["username"])
+        object2vec_response=sagemaker.invoke_endpoint(
+            EndpointName=inference_endpoint_name,
+            TargetVariant="o2v",
+            Body=json.dumps(object2vec_request)
+        )
+        object2vec_response=json.loads(object2vec_response["Body"].read().decode())
+        rcf_request={
+            "instances": [
+                {
+                    "features": object2vec_response["predictions"][0]["embeddings"]
+                }
+            ]
+        }
+        rcf_reponse=sagemaker.invoke_endpoint(
+            EndpointName=inference_endpoint_name,
+            TargetVariant="rcf",
+            Body=json.dumps(rcf_request),
+            ContentType="application/json"
+        )
+        print(rcf_reponse["Body"].read().decode())
+    except Exception as e:
+        print(f"Error invoking Object2Vec: {e}")
+    
     firehose.put_record(
         DeliveryStreamName=os.environ["FIREHOSE_DELIVERY_STREAM_NAME"],
         Record={
@@ -45,6 +87,15 @@ def handler(event, context):
         "statusCode": 200,
         "body": "Ok"
     }
+
+def sanitize(partition_name):
+    sanitized_string=map(lambda c: c if c.isalnum() else "-", partition_name)
+    sanitized_string="".join(sanitized_string)
+    return sanitized_string[:40]
+
+def get_inference_endpoint_name(username):
+    sanitized_username=sanitize(username)
+    return sanitized_username+"-endpoint"
 
 
 def loadJson(jsonlog):

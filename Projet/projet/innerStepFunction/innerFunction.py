@@ -34,7 +34,7 @@ class InnerFunction(Construct):
                 script=glue_alpha.AssetCode.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/glueETLObject2Vec/glueETLObject2Vec.py'),
             ),
             worker_type=glue_alpha.WorkerType.STANDARD,
-            worker_count=50
+            worker_count=1
         )
 
         datasetStorageBucket=s3.Bucket(self, 'DatasetStorageBucket',
@@ -187,7 +187,7 @@ class InnerFunction(Construct):
                 script=glue_alpha.AssetCode.from_asset(os.path.dirname(os.path.abspath(__file__)) + '/glueETLRandomCutForest/glueETLRandomCutForest.py'),
             ),
             worker_type=glue_alpha.WorkerType.STANDARD,
-            worker_count=50
+            worker_count=1
         )
 
         datasetStorageBucket.grant_read_write(glue_job_rcf)
