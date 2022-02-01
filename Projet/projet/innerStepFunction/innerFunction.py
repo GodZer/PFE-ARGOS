@@ -227,8 +227,8 @@ class InnerFunction(Construct):
         training_job_name=sf.JsonPath.string_at("$.RCF-training-job"),
         hyperparameters={
             "feature_dim": "10",
-            "num_samples_per_tree": "256",
-            "num_trees": "100" 
+            "num_samples_per_tree": "10",
+            "num_trees": "50" 
         },
         integration_pattern=sf.IntegrationPattern.RUN_JOB,
         resource_config=sft.ResourceConfig(instance_count=1, instance_type=ec2.InstanceType("m5.4xlarge"), volume_size=Size.gibibytes(500)),
@@ -258,13 +258,13 @@ class InnerFunction(Construct):
             endpoint_config_name=sf.JsonPath.string_at("$.endpoint_config_name"),
             production_variants=[
                 sft.ProductionVariant(
-                    instance_type=ec2.InstanceType("inf1.xlarge"),
+                    instance_type=ec2.InstanceType("m5.large"),
                     model_name=sf.JsonPath.string_at("$.object2vec_model_name"),
                     variant_name="o2v",
                     initial_instance_count=1
                 ),
                 sft.ProductionVariant(
-                    instance_type=ec2.InstanceType("inf1.xlarge"),
+                    instance_type=ec2.InstanceType("m5.large"),
                     model_name=sf.JsonPath.string_at("$.RCF_model_name"),
                     variant_name="rcf",
                     initial_instance_count=1
