@@ -1,10 +1,7 @@
 
-# Welcome to your CDK Python project!
+# Welcome on our CDK Python project!
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`projet_stack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
-
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+You should explore the contents of this project. It demonstrates the CDK app with an instance of a stack (`ARGOS_STACK`) 
 
 This project is set up like a standard Python project.  The initialization process also creates
 a virtualenv within this project, stored under the .venv directory.  To create the virtualenv
@@ -19,13 +16,13 @@ $ python -m venv .venv
 ```
 
 After the init process completes and the virtualenv is created, you can use the following
-step to activate your virtualenv.
+step to activate a virtualenv.
 
 ```
 $ source .venv/bin/activate
 ```
 
-If you are a Windows platform, you would activate the virtualenv like this:
+If you are a Windows platform, you would activate a virtualenv like this:
 
 ```
 % .venv\Scripts\activate.bat
@@ -37,17 +34,10 @@ Once the virtualenv is activated, you can install the required dependencies.
 $ pip install -r requirements.txt
 ```
 
-At this point you can now synthesize the CloudFormation template for this code.
+Now you can now deploy the project by using the following command:
 
 ```
-$ cdk synth
-```
-
-You can now begin exploring the source code, contained in the hello directory.
-There is also a very trivial test included that can be run like this:
-
-```
-$ pytest
+$ cdk deploy
 ```
 
 To add additional dependencies, for example other CDK libraries, just add to
@@ -63,3 +53,5 @@ command.
  * `cdk docs`        open CDK documentation
 
 Enjoy!
+
+For more information on the project, please refer to the [Welcome Page](https://github.com/GodZer/PFE-ARGOS)
