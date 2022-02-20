@@ -6,10 +6,8 @@
 
 </br>
 
-</br>
 
 ## 📕 Introduction
-<hr>
 
 <p align="justify">
   "ARGOS - Behavioral anomaly detection within a <a href="https://kubernetes.io">Kubernetes</a> cluster" made by a group of students in their final year project at <a href="https://www.ece.fr/">École Centrale d'Électronique (ECE)</a> in Paris.
@@ -27,7 +25,7 @@
 
 
 ## ⬇️ Downloading ARGOS
-<hr>
+
 
 The latest stable version of ARGOS will always be the stable branch of the GitHub repository. You can get the latest version of the code using the following command:
 
@@ -38,7 +36,7 @@ git clone https://github.com/GodZer/PFE-ARGOS.git
 </br>
 
 ## ⚡️ Quickstart
-<hr>
+
 
 * **Prerequisites:** building the solution requires the following tools to be installed on your system.
   * [NodeJS 14.x](https://nodejs.org/en/download/)
@@ -51,7 +49,7 @@ git clone https://github.com/GodZer/PFE-ARGOS.git
 </br>
 
 ## 👥 Contributors
-<hr>
+
 
 <p align="justify">
 
