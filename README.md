@@ -44,7 +44,7 @@ git clone https://github.com/GodZer/PFE-ARGOS.git
   * [Python 3.x](https://www.python.org/downloads/)
   * [Docker](https://docs.docker.com/get-docker/)
 
-* To proceed the deployment of the app, please refer to the [following link](https://github.com/GodZer/PFE-ARGOS/App/README.md)
+* To proceed the deployment of the app, please refer to the [following link](https://github.com/GodZer/PFE-ARGOS/blob/main/App/README.md)
 
 </br>
 
