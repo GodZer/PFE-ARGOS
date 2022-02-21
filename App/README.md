@@ -34,7 +34,7 @@ Once the virtualenv is activated, you can install the required dependencies.
 $ pip install -r requirements.txt
 ```
 
-Now you can now deploy the project by using the following command:
+Now you can deploy the project by using the following command:
 
 ```
 $ cdk deploy
