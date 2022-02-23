@@ -9,6 +9,12 @@ it assumes that there is a `python3` executable in your path with access to the 
 If for any reason the automatic creation of the virtualenv fails, you can create the virtualenv
 manually once the init process completes.
 
+First, make sure you are in the correct folder:
+
+```
+$ cd App/
+```
+
 To manually create a virtualenv on MacOS and Linux:
 
 ```
@@ -34,15 +40,29 @@ Once the virtualenv is activated, you can install the required dependencies.
 $ pip install -r requirements.txt
 ```
 
+If necessary, specify to your interpreter the following path for the virtualenv:
+
+```
+./App/.venv/bin/python
+```
+
+Before carry on, don't forget to keep a Docker daemon up on your environment.
+
+When you first use the project, you need to bootstrap the environment before deploying the project, please run:
+
+```
+$ cdk bootstrap
+```
+
 Now you can deploy the project by using the following command:
 
 ```
 $ cdk deploy
 ```
 
-To add additional dependencies, for example other CDK libraries, just add to
-your requirements.txt file and rerun the `pip install -r requirements.txt`
-command.
+Enjoy!
+
+For more information on the project, please refer to the [Welcome Page](https://github.com/GodZer/PFE-ARGOS)
 
 ## Useful commands
 
@@ -51,7 +71,3 @@ command.
  * `cdk deploy`      deploy this stack to your default AWS account/region
  * `cdk diff`        compare deployed stack with current state
  * `cdk docs`        open CDK documentation
-
-Enjoy!
-
-For more information on the project, please refer to the [Welcome Page](https://github.com/GodZer/PFE-ARGOS)
