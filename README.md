@@ -24,6 +24,15 @@
 </br>
 
 
+## 🏛️ Architecture of ARGOS
+
+
+<p align="center">
+  <img src="docs/img/architecture.svg" alt="argos_logo">
+</p>
+
+</br>
+
 ## ⬇️ Downloading ARGOS
 
 
