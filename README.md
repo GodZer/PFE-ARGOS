@@ -25,11 +25,16 @@
 
 ## 🏢 ☁️ Kubernetes Cluster source
 
-</br>
 
+</br>
 <p align="center">
-  <img height="400px" src="docs/img/cluster.svg" alt="argos_logo">
+  <img height="400px" src="docs/img/cluster.svg" alt="cluster">
 </p>
+<p align="center">
+  <img height="px" src="docs/img/logo.svg" alt="argos_logo">
+</p>
+
+
 
 ARGOS can be used for any Kubernetes cluster. During the development phase, we used an <a href="https://aws.amazon.com/eks/">EKS</a> cluster. An <a href="https://aws.amazon.com/api-gateway/">API Gateway</a> is there to provide the bridge between the cluster and our solution.
 
@@ -43,7 +48,7 @@ For an EKS cluster, the logs are sent natively to <a href="https://aws.amazon.co
 
 
 <p align="center">
-  <img src="docs/img/architecture.svg" alt="argos_logo">
+  <img src="docs/img/architecture.svg" alt="architecture">
 </p>
 
 </br>
