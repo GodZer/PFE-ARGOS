@@ -18,10 +18,25 @@
 
   AWS Machine Learning algorithms provide many easy-to-use tools for anomaly detection. <a href="https://docs.aws.amazon.com/sagemaker/latest/dg/randomcutforest.html">Random Cut Forest</a>, for example, can detect anomalous points in a vector space of arbitrary dimension.
   
-  ARGOS is an open-source tool based on Machine Learning tools provided by AWS to detect unusual behaviors within a Kubernetes cluster. These anomalies can be the sign of a Kubernetes compromise and therefore synonymous with a security breach and are thus reported to <a href="https://aws.amazon.com/security-hub/?nc1=h_ls">AWS SecurityHub</a>.
+  ARGOS is an open-source tool based on Machine Learning tools provided by AWS to detect unusual behaviors within a Kubernetes cluster. These anomalies can be the sign of a Kubernetes compromise and therefore synonymous with a security breach and are thus reported to <a href="https://aws.amazon.com/security-hub/">AWS SecurityHub</a>.
 
 </p>
 </br>
+
+## 🏢 ☁️ Kubernetes Cluster source
+
+</br>
+
+<p align="center">
+  <img height="400px" src="docs/img/cluster.svg" alt="argos_logo">
+</p>
+
+ARGOS can be used for any Kubernetes cluster. During the development phase, we used an <a href="https://aws.amazon.com/eks/">EKS</a> cluster. An <a href="https://aws.amazon.com/api-gateway/">API Gateway</a> is there to provide the bridge between the cluster and our solution.
+
+For an EKS cluster, the logs are sent natively to <a href="https://aws.amazon.com/cloudwatch/">Amazon CloudWatch</a>, so we implemented a <a href="https://aws.amazon.com/lambda/">Lambda</a> function that decodes and forwards the logs to API Gateway.
+
+</br>
+
 
 
 ## 🏛️ Architecture of ARGOS
