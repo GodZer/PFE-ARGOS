@@ -30,9 +30,6 @@
 <p align="center">
   <img height="400px" src="docs/img/cluster.svg" alt="cluster">
 </p>
-<p align="center">
-  <img height="40px" src="docs/img/logo.svg" alt="argos_logo">
-</p>
 
 </br>
 
