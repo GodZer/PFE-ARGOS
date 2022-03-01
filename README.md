@@ -31,8 +31,6 @@
   <img height="400px" src="docs/img/cluster.svg" alt="cluster">
 </p>
 
-</br>
-
 ARGOS can be used for any Kubernetes cluster. During the development phase, we used an <a href="https://aws.amazon.com/eks/">EKS</a> cluster. An <a href="https://aws.amazon.com/api-gateway/">API Gateway</a> is there to provide the bridge between the cluster and our solution.
 
 For an EKS cluster, the logs are sent natively to <a href="https://aws.amazon.com/cloudwatch/">Amazon CloudWatch</a>, so we implemented a <a href="https://aws.amazon.com/lambda/">Lambda</a> function that decodes and forwards the logs to API Gateway.
